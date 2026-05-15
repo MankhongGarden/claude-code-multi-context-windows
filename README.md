@@ -10,6 +10,8 @@
   3. **The "sandboxed bash" you use in Claude Code is a real Linux VM** with a 9.4 GB `rootfs.vhdx`, plus a 2.3 GB compressed mirror.
 - Total Claude Desktop downtime: ~15 minutes (during the VM bundle move). Everything else live.
 
+👉 **See also:** [docs/infra-inventory.md](docs/infra-inventory.md) — the cross-session credential ledger pattern that complements this setup.
+
 ---
 
 ## Why this turned into a thing
@@ -222,6 +224,12 @@ A few things I considered and decided *against*:
 3. **A heavy Win Store app is sometimes 95% runtime cache.** Investigate before assuming you need to uninstall.
 4. **The Claude Code sandboxed bash is not a clever VM-less trick.** It's a Hyper-V/WSL Linux VM. Knowing this changes how you reason about command latency, file system access, and storage requirements.
 5. **An identity-block at the top of CLAUDE.md is the cheapest, most effective guardrail against context confusion.** Cheaper than auto-detection, more robust than memory.
+
+---
+
+## More in this series
+
+- 📘 **[docs/infra-inventory.md](docs/infra-inventory.md)** — A cross-session credential ledger pattern. The file-based companion that prevents duplicate PATs / MCPs across parallel Claude Code sessions. 5-minute setup. Pairs well with the multi-context setup in this README.
 
 ---
 
