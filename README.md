@@ -227,6 +227,48 @@ A few things I considered and decided *against*:
 
 ---
 
+## CLI-side switching, and where this guide sits
+
+This writeup is the **Windows + Desktop-coexistence deep dive** — junctions, the
+Win Store sandbox, the hidden Linux VM, and running Claude Desktop (Team)
+alongside Claude CLI (Max) on one machine.
+
+If your problem is *just* CLI account-switching, that layer is already solved by
+dedicated tools:
+
+- [claude-code-profiles][ccp] (38★, MIT) — cross-platform incl. Windows; one
+  `CLAUDE_CONFIG_DIR` per profile, no special launch command.
+- [cloak][] (27★) — isolated config dir per identity, concurrent sessions,
+  directory auto-switch.
+
+…and the patterns behind them are catalogued in yurukusa's
+[multi-account operator field guide][fg] (alias / direnv / symlink /
+SessionStart preflight / billing log).
+
+### What none of those cover (and this setup hits)
+
+1. **Desktop + CLI on one machine, at the same time.** The switchers above are
+   CLI-only. The hard part here was making the Win Store *Desktop* app and the
+   CLI hold two different accounts at once — junctions through a sandboxed
+   package, the 12 GB VM bundle, zero sign-out churn.
+
+2. **The preflight hooks assume API-key mode.** The popular `SessionStart`
+   account-guard decides *which account* by reading the `ANTHROPIC_API_KEY`
+   prefix. On a **Max / Team OAuth subscription there is no API key** — the guard
+   has nothing to read. The signal that survives is `CLAUDE_CONFIG_DIR` itself.
+
+3. **Architecture over discipline.** A separate config dir + a wrapper on PATH
+   (`claude-personal.cmd`) + a per-context identity block in `CLAUDE.md` removes
+   the "I forgot to switch" failure mode *structurally* — cheaper and harder to
+   bypass than a runtime hook, because the two accounts never share a shell to
+   begin with.
+
+[ccp]: https://github.com/quinnjr/claude-code-profiles
+[cloak]: https://github.com/synth1s/cloak
+[fg]: https://gist.github.com/yurukusa/d880ecc984af5d664f003daf85f956e3
+
+---
+
 ## More in this series
 
 - 📘 **[docs/infra-inventory.md](docs/infra-inventory.md)** — A cross-session credential ledger pattern. The file-based companion that prevents duplicate PATs / MCPs across parallel Claude Code sessions. 5-minute setup. Pairs well with the multi-context setup in this README.
