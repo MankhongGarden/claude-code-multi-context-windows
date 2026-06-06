@@ -14,6 +14,14 @@
 
 ---
 
+## Who this is for
+
+You're in the right place if you want to **run two Claude accounts on one Windows machine** — specifically the **Claude Desktop app and the Claude Code CLI signed into different accounts at the same time** (e.g. a Team/work account in Desktop and a Max/personal account in the CLI), each with its own skills, MCP servers, memory graph, and session history. It also covers the **`CLAUDE_CONFIG_DIR`-per-profile** mechanics — including why a second profile dir asks for its own login — and why the Win Store sandbox doesn't fight you.
+
+If you only need **CLI account/profile switching** (no Desktop app in the mix), the dedicated tools linked at the bottom ([claude-code-profiles][ccp], [cloak][]) are a lighter fit — start there. This guide is the Windows + Desktop-coexistence deep dive.
+
+---
+
 ## Why this turned into a thing
 
 Two pressures stacked at once:
@@ -96,7 +104,7 @@ Claude configuration file not found at: D:\ClaudeData\.claude-personal\.claude.j
 
 **Insight 2: `CLAUDE_CONFIG_DIR` scopes `.claude.json` too.** Claude Code looks for `.claude.json` (the user-scope MCP config) at `$CLAUDE_CONFIG_DIR/.claude.json`, NOT at `$HOME/.claude.json`. The Anthropic docs I could find describe `CLAUDE_CONFIG_DIR` as redirecting "the config directory" but don't spell out that the MCP config file rides along.
 
-This is good news for separation — copy `~/.claude.json` into `.claude-personal\.claude.json` and the two contexts have fully independent MCP rosters.
+This is good news for separation — copy `~/.claude.json` into `.claude-personal\.claude.json` and the two contexts have fully independent MCP rosters. It also explains a common surprise: because the config dir holds the stored credentials too, a second profile dir prompts its own login even for the *same* account — the isolation is the point, not a bug.
 
 (Aside: PowerShell profile auto-load via `$PROFILE` is broken on this machine because my Documents folder is locale-named in a non-ASCII script and PowerShell mangles the path. Side-stepped by going through cmd via PATH instead.)
 
