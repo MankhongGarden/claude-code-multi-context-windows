@@ -12,6 +12,13 @@
 
 👉 **See also:** [docs/infra-inventory.md](docs/infra-inventory.md) — the cross-session credential ledger pattern that complements this setup.
 
+> **Update 2026-10** — the two-context design is unchanged (Desktop on the Team account, `claude-personal` on the Max account, separate `CLAUDE_CONFIG_DIR`, identity block in each `CLAUDE.md`). What changed is the wrapper:
+> - **Built-in auto-update is off for the CLI context.** On this machine it kept leaving the npm install's `claude.exe` as a ~500-byte stub, or failed because another session had the exe open. A safe updater (stage, verify, rename-and-swap) now runs in the background each time the wrapper starts.
+> - **The wrapper also starts a loading-screen intro**, run in parallel with `claude` so there is no blank gap. It now uses `call claude` so it can clean up after Claude exits, and no longer echoes the resolved paths.
+> - **`DISABLE_AUTOUPDATER` is per context.** It goes in `settings.json` under `"env"`, and each `CLAUDE_CONFIG_DIR` has its own `settings.json`. Turning it off in one context does not turn it off in another context that runs the same npm install.
+>
+> The intro and the updater are written up, with source, in [claude-code-mods-field-notes](https://github.com/MankhongGarden/claude-code-mods-field-notes#matrix-boot-intro). [`scripts/claude-personal.cmd`](scripts/claude-personal.cmd) is updated to the current shape and still works as a plain wrapper if you don't install them.
+
 ---
 
 ## Who this is for
@@ -292,7 +299,7 @@ SessionStart preflight / billing log).
 ## Scripts in this repo
 
 - [`scripts/move-vm-bundles.ps1`](scripts/move-vm-bundles.ps1) — the 12 GB junction script (with `-Rollback` flag)
-- [`scripts/claude-personal.cmd`](scripts/claude-personal.cmd) — the CLI wrapper for the second context
+- [`scripts/claude-personal.cmd`](scripts/claude-personal.cmd) — the CLI wrapper for the second context (updated 2026-10, see the note at the top)
 
 ---
 
