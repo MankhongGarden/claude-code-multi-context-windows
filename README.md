@@ -16,6 +16,8 @@
 > - **Built-in auto-update is off for the CLI context.** On this machine it kept leaving the npm install's `claude.exe` as a ~500-byte stub, or failed because another session had the exe open. A safe updater (stage, verify, rename-and-swap) now runs in the background each time the wrapper starts.
 > - **The wrapper also starts a loading-screen intro**, run in parallel with `claude` so there is no blank gap. It now uses `call claude` so it can clean up after Claude exits, and no longer echoes the resolved paths.
 > - **`DISABLE_AUTOUPDATER` is per context.** It goes in `settings.json` under `"env"`, and each `CLAUDE_CONFIG_DIR` has its own `settings.json`. Turning it off in one context does not turn it off in another context that runs the same npm install.
+> - **The personal context now loads far fewer MCPs** (2026-10-09): 15 → 4 local servers (`chrome-devtools`, a desktop-automation server, `github`, `google-calendar`) plus 3 claude.ai connectors. `memory`, `sentry`, `stripe`, `cloudflare-docs`, the local `gmail` and `connect-apps` went. Rule I use now: an MCP only for live operations I run every week; everything else becomes a skill or a reference file that loads on demand and costs nothing until it's read. Stripe moved to the Stripe CLI with a key per project, so one session can't act on another project's account. The memory graph stays as a plain JSON file.
+> - **The "lane" / handoff layer is gone** (2026-10-08). Parallel sessions used to pass work through shared handoff files and an inbox. In practice each project now runs its own work, and the rare cross-session note goes into a small reminder inbox instead. The two-context split itself didn't need any of it.
 >
 > The intro and the updater are written up, with source, in [claude-code-mods-field-notes](https://github.com/MankhongGarden/claude-code-mods-field-notes#matrix-boot-intro). [`scripts/claude-personal.cmd`](scripts/claude-personal.cmd) is updated to the current shape and still works as a plain wrapper if you don't install them.
 
@@ -196,7 +198,7 @@ MCPs (9):      a11y · browserbase · chrome-devtools · cloudflare-docs
                memory · ms365 · sequential-thinking · shadcn · time
 ```
 
-Personal CLI keeps the full 42 skills + 15 MCPs.
+Personal CLI keeps the full 42 skills + 15 MCPs. (As of 2026-10-09 it runs 4 MCPs, see the update at the top.)
 
 ## Phase 6: Identity blocks in CLAUDE.md
 
