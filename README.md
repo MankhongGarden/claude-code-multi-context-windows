@@ -7,7 +7,7 @@
 - Discovered three things the docs don't tell you:
   1. **Win Store apps follow NTFS junctions** even inside their sandboxed user data folder.
   2. **`CLAUDE_CONFIG_DIR` also scopes `.claude.json`** (the MCP config) — it lives *inside* the config dir, not at `$HOME`.
-  3. **The "sandboxed bash" you use in Claude Code is a real Linux VM** with a 9.4 GB `rootfs.vhdx`, plus a 2.3 GB compressed mirror.
+  3. **Claude Desktop's sandbox is a real Linux VM** with a 9.4 GB `rootfs.vhdx`, plus a 2.3 GB compressed mirror. (The terminal CLI on Windows does not use it; its Bash tool is Git Bash on the host. Corrected 2026-10-20.)
 - Total Claude Desktop downtime: ~15 minutes (during the VM bundle move). Everything else live.
 
 👉 **See also:** [docs/infra-inventory.md](docs/infra-inventory.md) — the cross-session credential ledger pattern that complements this setup.
@@ -18,6 +18,10 @@
 > - **`DISABLE_AUTOUPDATER` is per context.** It goes in `settings.json` under `"env"`, and each `CLAUDE_CONFIG_DIR` has its own `settings.json`. Turning it off in one context does not turn it off in another context that runs the same npm install.
 > - **The personal context now loads far fewer MCPs** (2026-10-09): 15 → 4 local servers (`chrome-devtools`, a desktop-automation server, `github`, `google-calendar`) plus 3 claude.ai connectors. `memory`, `sentry`, `stripe`, `cloudflare-docs`, the local `gmail` and `connect-apps` went. Rule I use now: an MCP only for live operations I run every week; everything else becomes a skill or a reference file that loads on demand and costs nothing until it's read. Stripe moved to the Stripe CLI with a key per project, so one session can't act on another project's account. The memory graph stays as a plain JSON file.
 > - **The "lane" / handoff layer is gone** (2026-10-08). Parallel sessions used to pass work through shared handoff files and an inbox. In practice each project now runs its own work, and the rare cross-session note goes into a small reminder inbox instead. The two-context split itself didn't need any of it.
+> - **Down to 3 local MCPs** (2026-10-10): `google-calendar` went too, replaced by a Gmail/Calendar CLI that covers several accounts.
+> - **Browser automation is its own isolated piece** (2026-10-08). Claude drives one dedicated Chromium with its own user-data-dir and a remote-debugging port, through the chrome-devtools MCP plus a small desktop-automation MCP for real OS clicks. My everyday Chrome never gets a debug port or an extension. A launcher script checks that Chromium is up on the right profile before any browser work, and a PreToolUse hook lets each chat touch only the tabs it opened, because several sessions share that one browser.
+> - **CLIs have one login slot each.** Vercel, GitHub and Resend CLIs keep a single logged-in account, so logging in for project B silently breaks project A. Small wrappers now pick the token per project folder or repo owner from environment variables, and `vercel login` is banned in my rules.
+> - **`~/.claude` means the day-job side.** Because of the junction in Phase 2, any note or script that says `~/.claude/...` points at the work context. I replaced those references with absolute paths to the personal config dir (2026-10-20); one script had been logging personal infrastructure into the work-side inventory file.
 >
 > The intro and the updater are written up, with source, in [claude-code-mods-field-notes](https://github.com/MankhongGarden/claude-code-mods-field-notes#matrix-boot-intro). [`scripts/claude-personal.cmd`](scripts/claude-personal.cmd) is updated to the current shape and still works as a plain wrapper if you don't install them.
 
@@ -136,9 +140,11 @@ This is good news for separation — copy `~/.claude.json` into `.claude-persona
 └── ...
 ```
 
-**Insight 3: Your "sandboxed bash" in Claude Code is a real Linux VM.** Hyper-V or WSL2, depending on your machine. `rootfs.vhdx` is a 9.4 GB Linux root filesystem. The `.zst` companion is the compressed download source kept for fast-recovery if the extracted VHDX corrupts. Plus an initrd, a kernel, a small session-data disk.
+**Insight 3: Claude Desktop's sandbox is a real Linux VM.** `rootfs.vhdx` is a 9.4 GB Linux root filesystem. The `.zst` companion is the compressed download source kept for fast-recovery if the extracted VHDX corrupts. Plus an initrd, a kernel, a small session-data disk.
 
-When Claude Code's tool runs `Bash`, it mounts this VHDX as a virtual disk and shells in. Every command in every Claude session runs inside this Linux VM — that's why `df -h /c` returns Linux-style output and shows your Windows drives mounted at `/c`, `/d`. The sandbox is fully separate from your Windows process tree.
+When Claude Desktop runs a sandboxed command, it runs inside this Linux VM — that's why `df -h` there returns Linux-style output with your Windows drives mounted under it. The sandbox is separate from your Windows process tree.
+
+> **Correction (2026-10-20):** the first version of this post said the Claude Code CLI's `Bash` tool runs in this VM. It doesn't. On Windows the terminal CLI's Bash tool is Git Bash on the host, with no VM involved. The VM belongs to Claude Desktop's sandbox.
 
 The migration plan: move the entire `vm_bundles/` to D: via junction. Same trick as `~/.claude/`. But this one needs Claude Desktop *off* — Hyper-V keeps `rootfs.vhdx` locked while a sandboxed command is running.
 
@@ -239,7 +245,7 @@ A few things I considered and decided *against*:
 1. **Junctions are the right tool when an app has a hardcoded path that points to a wrong volume.** Don't bother editing registry, moving installs, or symlinking individual files. Junction the whole folder.
 2. **Multi-context separation = config-dir-scoped + env-var-overridden, not auto-detected.** Explicit beats clever for stateful operations.
 3. **A heavy Win Store app is sometimes 95% runtime cache.** Investigate before assuming you need to uninstall.
-4. **The Claude Code sandboxed bash is not a clever VM-less trick.** It's a Hyper-V/WSL Linux VM. Knowing this changes how you reason about command latency, file system access, and storage requirements.
+4. **Claude Desktop's sandbox is not a clever VM-less trick.** It's a Linux VM with its own multi-GB disk. Knowing this changes how you reason about command latency, file system access, and storage requirements.
 5. **An identity-block at the top of CLAUDE.md is the cheapest, most effective guardrail against context confusion.** Cheaper than auto-detection, more robust than memory.
 
 ---
